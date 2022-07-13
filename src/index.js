@@ -28,34 +28,42 @@ function removeUser(id) {
     })
 }
 
+function getUser(id) {
+    const user = users.find((item) => {
+        return item.id === id
+    })
+
+    return user
+}
+
 server.on('connect', (socket) => {
     console.log(`${socket.id} connected`)
 })
 
 server.on('connection', (socket) => {
     socket.on(Event.USER_CONNECT, (user) => {
-        user.id = socket.id
         addUser(user)
-        server.emit(Event.USER_CONNECT, users)
-        console.log(`${Event.USER_CONNECT}: ${users}`)
+        server.emit(Event.USER_CONNECT, user, users)
+        console.log(`${Event.USER_CONNECT}: ${user} ${users}`)
     })
 
-    socket.on(Event.USER_UPDATE, (user) => {
-        updateUser(user)
-        server.emit(Event.USER_UPDATE, users)
-        console.log(`${Event.USER_UPDATE}: ${user}`)
+    socket.on(Event.USER_UPDATE, (newUser) => {
+        const oldUser = getUser(newUser.id)
+        updateUser(newUser)
+        server.emit(Event.USER_UPDATE, oldUser, newUser, users)
+        console.log(`${Event.USER_UPDATE}: ${oldUser} ${newUser} ${users}`)
     })
 
-    socket.on(Event.USER_MESSAGE, (user, message) => {
-        updateUser(user)
-        server.emit(Event.USER_MESSAGE, user, message)
-        console.log(`${Event.USER_MESSAGE}: ${user} ${message}`)
+    socket.on(Event.USER_MESSAGE, (message) => {
+        server.emit(Event.USER_MESSAGE, message)
+        console.log(`${Event.USER_MESSAGE}: ${message}`)
     })
 
     socket.on('disconnect', () => {
+        const user = getUser(socket.id)
         removeUser(socket.id)
-        console.log(`${socket.id} disconnected`, users)
-        server.emit(Event.USER_DISCONNECT, users)
+        console.log(`${socket.id} disconnected`, user, users)
+        server.emit(Event.USER_DISCONNECT, user, users)
     })
 })
 
